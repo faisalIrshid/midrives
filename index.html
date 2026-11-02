@@ -182,6 +182,10 @@ h1,h2,p{margin:0}
 .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;font-weight:700;letter-spacing:.18em;text-align:center}
 .codein{width:100%;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:28px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;border-radius:22px;padding:14px;border:1px solid var(--glass-border);background:var(--pill);outline:none}
 .err{margin:0 18px;font-size:14px;color:var(--red);font-weight:600}
+.pfp{display:block;border-radius:50%;object-fit:cover;flex:none;border:1px solid rgba(255,255,255,.65);box-shadow:0 6px 18px rgba(20,40,80,.18)}
+img.av{object-fit:cover;padding:0}
+.pfp-btn{position:relative;border:0;background:none;padding:0;border-radius:50%}
+.pfp-btn .cam{position:absolute;right:-2px;bottom:-2px;width:34px;height:34px;border-radius:50%;background:var(--tint);border:2px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,60,150,.3)}
 /* motion */
 @keyframes rise{from{opacity:.001;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes menuIn{from{opacity:.001;transform:scale(.6);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
@@ -213,6 +217,7 @@ button:active:not([disabled]),a:active{transform:scale(.96)}
 <div class="toast glass" id="toast" role="status" hidden></div>
 <div id="sheet"></div>
 <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+<input type="file" id="photoFile" accept="image/*" hidden>
 <style>
 .tabbar svg .o{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button[aria-current="page"] svg .o{fill:currentColor}
@@ -224,7 +229,7 @@ button:active:not([disabled]),a:active{transform:scale(.96)}
 <script>
 (function () {
 'use strict';
-var VERSION = '2.2';
+var VERSION = '2.3';
 var KEY = 'drivertrips:v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -639,10 +644,19 @@ function vSettle(k) {
 }
 
 /* ---------- settings ---------- */
+function avatar(size, font, id) {
+  var ph = data.profile.photo, initial = (data.profile.name || '?').charAt(0).toUpperCase();
+  if (ph) return '<img class="pfp" src="' + ph + '" alt="' + esc(data.profile.name || 'Profile photo') + '" width="' + size + '" height="' + size + '" style="width:' + size + 'px;height:' + size + 'px">';
+  return '<span class="tint" ' + (id ? 'id="' + id + '" ' : '') + 'style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:' + font + 'px;font-weight:700;flex:none">' + esc(initial) + '</span>';
+}
+function memberAv(m) {
+  if (m.id === cpMe() && data.profile.photo) return '<img class="av" src="' + data.profile.photo + '" alt="">';
+  return '<span class="av" style="background:' + cpColor(m.id) + '">' + esc((m.name || '?').charAt(0).toUpperCase()) + '</span>';
+}
 function vSettings() {
   var initial = (data.profile.name || '?').charAt(0).toUpperCase();
   return '<h1 class="title">Settings</h1>' +
-    '<button type="button" class="glass" data-act="go" data-sub="profile" style="display:flex;align-items:center;gap:12px;min-height:72px;padding:10px 18px 10px 12px;border-radius:28px;text-align:left"><span class="tint" style="width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:700;flex:none">' + esc(initial) + '</span><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-size:20px;font-weight:600">' + (esc(data.profile.name) || 'Your name') + '</span><span style="font-size:15px;color:var(--text2)">' + (esc(data.profile.city) || 'Add your city') + '</span></span>' + I.chev + '</button>' +
+    '<button type="button" class="glass" data-act="go" data-sub="profile" style="display:flex;align-items:center;gap:12px;min-height:72px;padding:10px 18px 10px 12px;border-radius:28px;text-align:left">' + avatar(50, 21) + '<span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-size:20px;font-weight:600">' + (esc(data.profile.name) || 'Your name') + '</span><span style="font-size:15px;color:var(--text2)">' + (esc(data.profile.city) || 'Add your city') + '</span></span>' + I.chev + '</button>' +
     '<p class="label">Driver</p><div class="glass list">' +
     '<button type="button" class="row" data-act="go" data-sub="driver"><span class="grow">Name</span><span class="val">' + driver() + '</span>' + I.chev + '</button>' +
     '<button type="button" class="row" data-act="go" data-sub="driver" data-focus="d-phone"><span class="grow">Phone</span><span class="val">' + (esc(data.driver.phone) || 'Not set') + '</span>' + I.chev + '</button>' +
@@ -659,10 +673,14 @@ function vSettings() {
 }
 function vProfile() {
   var initial = (data.profile.name || '?').charAt(0).toUpperCase();
-  return header('Profile') + '<div class="hero"><span class="tint" style="width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700" id="initial">' + esc(initial) + '</span></div>' +
+  var ph = !!data.profile.photo;
+  return header('Profile') + '<div class="hero" style="gap:6px"><button type="button" class="pfp-btn" data-act="pickphoto" aria-label="' + (ph ? 'Change' : 'Add') + ' profile photo">' + avatar(96, 40, 'initial') +
+    '<span class="cam" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>' +
+    '<div style="display:flex;gap:4px"><button type="button" class="btn link" data-act="pickphoto" style="min-height:44px;background:none;border:0;font-size:16px">' + (ph ? 'Change Photo' : 'Add Photo') + '</button>' +
+    (ph ? '<button type="button" class="btn danger" data-act="rmphoto" style="min-height:44px;background:none;border:0;font-size:16px">Remove</button>' : '') + '</div></div>' +
     '<div class="glass list"><label class="field"><span>Name</span><input id="p-name" autocomplete="given-name" value="' + esc(data.profile.name) + '" data-bind="profile.name"></label>' +
     '<label class="field"><span>City</span><input id="p-city" autocomplete="address-level2" placeholder="For the weather" value="' + esc(data.profile.city) + '" data-bind="profile.city"></label></div>' +
-    '<p class="note">Your name is used in the greeting. Your city sets the weather on Today.</p>';
+    '<p class="note">Your name is used in the greeting. Your city sets the weather on Today. Your photo stays on this iPhone.</p>';
 }
 function vDriver() {
   var r = hasPrice() ? curRate() : 0, t = today0(), s = monthStats(mkey(t.getFullYear(), t.getMonth()));
@@ -849,7 +867,7 @@ function cpQuestion(p, compact) {
   return '<div class="glass card" style="border-radius:32px"><div class="qhead">' + head + '<span class="chip now" style="margin-left:auto">Carpool</span></div><h2 class="q"' + (compact ? ' style="font-size:20px"' : '') + '>' + q + '</h2>' +
     '<div style="display:flex;flex-direction:column;gap:8px">' + cpMembers().map(function (m) {
       var on = sel.indexOf(m.id) >= 0;
-      return '<button type="button" class="who" aria-pressed="' + on + '" data-act="cpsel" data-leg="' + leg + '" data-id="' + esc(m.id) + '"><span class="av" style="background:' + cpColor(m.id) + '">' + esc((m.name || '?').charAt(0).toUpperCase()) + '</span><span style="flex:1">' + esc(m.name) + (m.id === cpMe() ? ' <span style="color:var(--text2);font-weight:400">(You)</span>' : '') + '</span><span class="tick">' + (on ? I.check : '') + '</span></button>';
+      return '<button type="button" class="who" aria-pressed="' + on + '" data-act="cpsel" data-leg="' + leg + '" data-id="' + esc(m.id) + '">' + memberAv(m) + '<span style="flex:1">' + esc(m.name) + (m.id === cpMe() ? ' <span style="color:var(--text2);font-weight:400">(You)</span>' : '') + '</span><span class="tick">' + (on ? I.check : '') + '</span></button>';
     }).join('') + '</div><p style="font-size:14px;color:var(--text2);text-align:center">' + note + '</p>' +
     '<div class="two"><button type="button" class="btn glass" data-act="cplog" data-leg="' + leg + '" data-none="1">Nobody</button><button type="button" class="btn tint' + (eve ? ' eve' : '') + '" data-act="cplog" data-leg="' + leg + '"' + (n ? '' : ' disabled') + '>Log Ride</button></div></div>';
 }
@@ -884,7 +902,7 @@ function vCarpool() {
   html += '<div class="glass card" style="flex-direction:row;align-items:center;padding:14px 16px;gap:12px"><span class="av" style="width:44px;height:44px;background:#17652D"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M5 11l1.6-4.3A2 2 0 0 1 8.5 5.4h7a2 2 0 0 1 1.9 1.3L19 11a2 2 0 0 1 1 1.7V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3A2 2 0 0 1 5 11z"/></svg></span><span style="flex:1"><b style="display:block;font-size:17px">' + esc(c.name) + '</b><span style="font-size:14px;color:var(--text2)">' + (hasPrice() ? money(curRate()) + ' JOD a trip · ' : '') + 'Home ↔ Work</span></span></div>';
   html += '<p class="label">Members</p><div class="glass list">' + cpMembers().map(function (m) {
     var me = m.id === c.memberId;
-    return '<div class="row" style="min-height:62px"><span class="av" style="background:' + cpColor(m.id) + '">' + esc((m.name || '?').charAt(0).toUpperCase()) + '</span><span class="grow"><span style="display:block;font-weight:600">' + esc(m.name) + (me ? ' (You)' : '') + '</span><span style="font-size:13px;color:var(--text2)">' + (m.role === 'organizer' ? 'Organizer' : 'Joined ' + +m.joinedOn.slice(8) + ' ' + MONTHS[+m.joinedOn.slice(5, 7) - 1].slice(0, 3)) + '</span></span>' +
+    return '<div class="row" style="min-height:62px">' + memberAv(m) + '<span class="grow"><span style="display:block;font-weight:600">' + esc(m.name) + (me ? ' (You)' : '') + '</span><span style="font-size:13px;color:var(--text2)">' + (m.role === 'organizer' ? 'Organizer' : 'Joined ' + +m.joinedOn.slice(8) + ' ' + MONTHS[+m.joinedOn.slice(5, 7) - 1].slice(0, 3)) + '</span></span>' +
       (org && !me ? '<button type="button" class="btn danger" data-act="cpremove" data-id="' + esc(m.id) + '" style="min-height:44px;padding:0 10px;font-size:15px;background:none;border:0">Remove</button>' : '') + '</div>';
   }).join('') + '</div>';
   if (inv) html += '<div class="glass card" style="align-items:center;text-align:center;gap:8px"><p style="font-size:14px;font-weight:600;color:var(--text2)">Invite code</p><p class="code">' + esc(inv.code) + '</p><p style="font-size:13px;color:var(--text2)">Works until ' + new Date(inv.expiresAt).getDate() + ' ' + MONTHS[new Date(inv.expiresAt).getMonth()] + '. They\'ll need MiDrives on their iPhone.</p><button type="button" class="btn tint" data-act="cpshare" style="width:100%">' + I.share + 'Share Invite</button></div>';
@@ -1090,6 +1108,8 @@ document.addEventListener('click', function (e) {
       if (cp() && cp().role === 'organizer') api('PATCH', '/groups/' + cp().groupId, { price: curRate() }).then(function () { cpSync(); }, function () { toast('Price saved here; the carpool will update when you\'re online'); });
       break; }
     case 'theme': data.theme = a.dataset.v; save(); render(); break;
+    case 'pickphoto': document.getElementById('photoFile').click(); break;
+    case 'rmphoto': delete data.profile.photo; save(); render(); toast('Photo removed'); break;
     case 'pushtoggle': if (data.push) remindersOff(); else remindersOn(); break;
     case 'cpmode': ui.cpMode = a.dataset.v || null; ui.cpErr = null; render(); if (ui.cpMode) { var fi = document.getElementById(ui.cpMode === 'join' ? 'cp-code' : 'cp-name'); if (fi) fi.focus(); } break;
     case 'cpcreate': cpCreate(); break;
@@ -1124,6 +1144,20 @@ document.addEventListener('input', function (e) {
 });
 document.addEventListener('change', function (e) {
   if (e.target.dataset && e.target.dataset.bind === 'profile.city') { data.geo = null; save(); loadWeather(true); }
+});
+document.getElementById('photoFile').addEventListener('change', function () {
+  var f = this.files && this.files[0], input = this; if (!f) return;
+  var url = URL.createObjectURL(f), img = new Image();
+  img.onload = function () {
+    var w = img.naturalWidth, h = img.naturalHeight, side = Math.min(w, h), c = document.createElement('canvas');
+    c.width = c.height = 320;
+    var x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    x.drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, 320, 320);
+    URL.revokeObjectURL(url); input.value = '';
+    data.profile.photo = c.toDataURL('image/jpeg', 0.86); save(); render(); toast('Photo updated');
+  };
+  img.onerror = function () { URL.revokeObjectURL(url); input.value = ''; toast('That photo couldn\'t be opened'); };
+  img.src = url;
 });
 document.getElementById('restoreFile').addEventListener('change', function () {
   var f = this.files && this.files[0], input = this; if (!f) return;
