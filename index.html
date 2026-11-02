@@ -43,7 +43,7 @@ body{min-height:100vh;min-height:100lvh}
 body{font-family:var(--font);color:var(--text);background:#DDE7F3;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
 .dark body{background:#0B1020}
 #bg{position:fixed;left:0;right:0;top:calc(-40px - env(safe-area-inset-top));height:calc(100vh + 80px + env(safe-area-inset-top) + env(safe-area-inset-bottom));height:calc(100lvh + 80px + env(safe-area-inset-top) + env(safe-area-inset-bottom));z-index:-1;pointer-events:none;background-color:#DDE7F3;background-image:radial-gradient(60% 40% at 12% 8%,rgba(94,156,255,.55),transparent 70%),radial-gradient(55% 35% at 96% 30%,rgba(255,170,110,.5),transparent 70%),radial-gradient(70% 45% at 25% 80%,rgba(110,220,190,.45),transparent 70%),radial-gradient(50% 35% at 92% 96%,rgba(170,140,255,.4),transparent 70%);transition:background-color .5s}
-.dark #bg{background-color:#0B1020;background-image:radial-gradient(60% 40% at 15% 10%,rgba(70,90,200,.55),transparent 70%),radial-gradient(55% 35% at 95% 35%,rgba(220,110,60,.35),transparent 70%),radial-gradient(70% 45% at 25% 85%,rgba(40,140,130,.35),transparent 70%),radial-gradient(50% 35% at 90% 95%,rgba(120,80,200,.35),transparent 70%)}
+.dark #bg{background-color:#0B1020;background-image:radial-gradient(60% 40% at 15% 10%,rgba(80,105,235,.75),transparent 70%),radial-gradient(55% 35% at 95% 35%,rgba(235,120,60,.5),transparent 70%),radial-gradient(70% 45% at 25% 85%,rgba(40,170,150,.5),transparent 70%),radial-gradient(50% 35% at 90% 95%,rgba(140,90,230,.55),transparent 70%)}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:var(--link)}
@@ -169,6 +169,20 @@ h1,h2,p{margin:0}
 .hero .ic{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .hero p{font-size:17px;color:var(--text2);line-height:1.35}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:24px}
+.seg button{min-height:44px;border:0;border-radius:20px;background:transparent;font-size:15px;font-weight:600;color:var(--text2)}
+.seg button[aria-pressed="true"]{background:var(--pill);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 8px rgba(20,40,80,.12)}
+.who{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 14px;border-radius:22px;border:1.5px solid var(--glass-border);background:rgba(255,255,255,.3);width:100%;text-align:left;font-size:17px;font-weight:500}
+.who[aria-pressed="true"]{border-color:rgba(0,100,210,.55);background:rgba(255,255,255,.8)}
+.dark .who{background:rgba(255,255,255,.06)}
+.dark .who[aria-pressed="true"]{background:rgba(140,194,255,.16);border-color:rgba(140,194,255,.6)}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.tick{width:26px;height:26px;border-radius:50%;margin-left:auto;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--text3);flex:none}
+.who[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent);color:#fff}
+.dark .who[aria-pressed="true"] .tick{color:#0B1020}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;font-weight:700;letter-spacing:.18em;text-align:center}
+.codein{width:100%;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:28px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;border-radius:22px;padding:14px;border:1px solid var(--glass-border);background:var(--pill);outline:none}
+.err{margin:0 18px;font-size:14px;color:var(--red);font-weight:600}
 /* motion */
 @keyframes rise{from{opacity:.001;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes menuIn{from{opacity:.001;transform:scale(.6);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
@@ -207,10 +221,11 @@ button:active:not([disabled]),a:active{transform:scale(.96)}
 .dark .tabbar{--tabcut:#1b2440}
 </style>
 
+<script src="config.js"></script>
 <script>
 (function () {
 'use strict';
-var VERSION = '2.0.1';
+var VERSION = '2.1';
 var KEY = 'drivertrips:v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -247,7 +262,7 @@ function mkey(y, m) { return y + '-' + pad(m + 1); }
 function today0() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
 function blank() {
   return { v: 2, setup: false, since: dstr(today0()), profile: { name: '', city: '' }, driver: { name: 'Loay', phone: '' },
-    prices: [], workDays: [1, 2, 3, 4, 5], times: { m: 420, e: 960 }, months: {}, paid: {}, geo: null };
+    prices: [], workDays: [1, 2, 3, 4, 5], times: { m: 420, e: 960 }, months: {}, paid: {}, geo: null, theme: 'auto', carpool: null };
 }
 var data = blank();
 (function load() {
@@ -288,7 +303,7 @@ function monthStats(k) {
   var m = data.months[k] || {}, y = +k.slice(0, 4), mo = +k.slice(5) - 1, w = 0, h = 0, days = 0, amt = 0;
   Object.keys(m).forEach(function (dd) {
     var t = m[dd], ds = k + '-' + pad(+dd), n = (t[0] === 1 ? 1 : 0) + (t[1] === 1 ? 1 : 0);
-    w += t[0] === 1 ? 1 : 0; h += t[1] === 1 ? 1 : 0; if (n) days++; amt += n * rateOn(ds);
+    w += t[0] === 1 ? 1 : 0; h += t[1] === 1 ? 1 : 0; if (n) days++; amt += ((t[0] === 1 ? 1 / (t[2] || 1) : 0) + (t[1] === 1 ? 1 / (t[3] || 1) : 0)) * rateOn(ds);
   });
   var paid = data.paid[k];
   return { y: y, m: mo, w: w, h: h, total: w + h, days: days, amount: amt, paid: paid ? paid.amount : 0, paidOn: paid ? paid.date : null };
@@ -467,9 +482,9 @@ function vToday() {
     var n = (rec[0] === 1 ? 1 : 0) + (rec[1] === 1 ? 1 : 0);
     html += '<div class="glass card" style="align-items:center;text-align:center;gap:12px"><span class="dot pop" style="width:64px;height:64px;background:var(--green)">' + I.bigcheck + '</span><h2 class="q">All done for today</h2>' +
       '<div class="glass list" style="width:100%;text-align:left">' +
-      '<div class="row"><span class="grow">Ride to work</span><span class="val">' + (rec[0] ? 'Rode' : 'No ride') + '</span></div>' +
-      '<div class="row"><span class="grow">Ride home</span><span class="val">' + (rec[1] ? 'Rode' : 'No ride') + '</span></div></div>' +
-      '<p style="font-weight:600">Today: ' + plural(n, 'trip') + (hasPrice() ? ' · ' + money(n * curRate()) + ' JOD' : '') + '</p>' +
+      '<div class="row"><span class="grow">Ride to work</span><span class="val">' + legText(t, 0, rec[0]) + '</span></div>' +
+      '<div class="row"><span class="grow">Ride home</span><span class="val">' + legText(t, 1, rec[1]) + '</span></div></div>' +
+      '<p style="font-weight:600">Today: ' + plural(n, 'trip') + (hasPrice() ? ' · ' + money(((rec[0] === 1 ? 1 / (rec[2] || 1) : 0) + (rec[1] === 1 ? 1 / (rec[3] || 1) : 0)) * curRate()) + ' JOD' : '') + '</p>' +
       '<button type="button" class="btn glass link" data-act="undo" data-p="e" style="min-height:44px">Change answer</button></div>';
   } else if (ph === 'm' && rec[0] != null) {
     html += '<div class="glass btn" style="justify-content:flex-start;font-weight:400;gap:10px">' + I.clock + '<span style="flex:1;text-align:left">Next question</span><span style="color:var(--text2)">' + fmtTime(data.times.e) + '</span></div>';
@@ -478,6 +493,7 @@ function vToday() {
   return html;
 }
 function question(p, compact, morningRec) {
+  if (cp() && inGroupOn(dstr(today0()))) return cpQuestion(p, compact, morningRec);
   var eve = p === 'e';
   var head = eve ? '<span class="dot" style="background:#B84A12">' + I.home + '</span><span style="color:var(--orange)">Ride Home</span>' : '<span class="dot" style="background:#17652D">' + I.work + '</span><span style="color:var(--green)">Ride to Work' + (compact ? ' · this morning' : '') + '</span>';
   var q = eve ? 'Are you riding home with ' + driver() + ' this evening?' : compact ? 'Did you ride to work with ' + driver() + ' this morning?' : 'Are you riding with ' + driver() + ' this morning?';
@@ -486,6 +502,13 @@ function question(p, compact, morningRec) {
     '<div class="two"><button type="button" class="btn glass" data-act="ans" data-p="' + p + '" data-v="0">' + (compact ? 'No' : 'Not Today') + '</button><button type="button" class="btn tint' + (eve ? ' eve' : '') + '" data-act="ans" data-p="' + p + '" data-v="1">Yes</button></div></div>';
 }
 function answered(p, v) {
+  var ds = dstr(today0()), r = cp() && inGroupOn(ds) && cp().rides[ds] && cp().rides[ds][p === 'm' ? 'w' : 'h'];
+  if (r) {
+    var line = r.riders.length ? namesText(r.riders) + ' rode to work' : 'Nobody rode this morning';
+    var by = r.by && r.by !== cpMe() ? '<span style="display:block;font-size:13px;font-weight:500;color:var(--text2)">Logged by ' + esc(cpName(r.by)) + '</span>' : '';
+    return '<div class="glass card" style="flex-direction:row;align-items:center;padding:12px 12px 12px 20px;gap:10px"><span class="dot" style="width:26px;height:26px;background:' + (v ? 'var(--green)' : 'var(--text3)') + '">' + (v ? I.check.replace('currentColor', '#fff') : '') + '</span>' +
+      '<span style="flex:1;font-size:17px;font-weight:600">' + line + by + '</span><button type="button" class="btn glass link" data-act="undo" data-p="' + p + '" style="min-height:44px;padding:0 16px;font-size:15px">Change</button></div>';
+  }
   return '<div class="glass card" style="flex-direction:row;align-items:center;padding:12px 12px 12px 20px;gap:10px"><span class="dot" style="width:26px;height:26px;background:' + (v ? 'var(--green)' : 'var(--text3)') + '">' + (v ? I.check.replace('currentColor', '#fff') : '') + '</span>' +
     '<span style="flex:1;font-size:17px;font-weight:600">' + (v ? 'Riding with ' + driver() + ' this morning' : 'No ride this morning') + '</span><button type="button" class="btn glass link" data-act="undo" data-p="' + p + '" style="min-height:44px;padding:0 16px;font-size:15px">Undo</button></div>';
 }
@@ -589,15 +612,15 @@ function rideLines(k) {
   var m = data.months[k] || {}, y = +k.slice(0, 4), mo = +k.slice(5) - 1;
   return Object.keys(m).map(Number).sort(function (a, b) { return a - b; }).map(function (d) {
     var r = m[d], dt = new Date(y, mo, d), parts = [];
-    if (r[0] === 1) parts.push('to work'); if (r[1] === 1) parts.push('back home');
-    return parts.length ? { label: WDS[dt.getDay()] + ' ' + d + ' ' + MONTHS[mo].slice(0, 3), text: parts.join(', '), n: parts.length } : null;
+    if (r[0] === 1) parts.push('to work' + (r[2] > 1 ? ' (split ' + r[2] + ' ways)' : '')); if (r[1] === 1) parts.push('back home' + (r[3] > 1 ? ' (split ' + r[3] + ' ways)' : ''));
+    return parts.length ? { label: WDS[dt.getDay()] + ' ' + d + ' ' + MONTHS[mo].slice(0, 3), text: parts.join(', '), n: parts.length, shared: (r[0] === 1 && r[2] > 1) || (r[1] === 1 && r[3] > 1) } : null;
   }).filter(Boolean);
 }
 function summaryText(k) {
   var s = monthStats(k), lines = rideLines(k), name = data.driver.name || 'there';
   var rates = {}; lines.forEach(function () {}); Object.keys(data.months[k] || {}).forEach(function (d) { rates[money(rateOn(k + '-' + pad(+d)))] = 1; });
   var rl = Object.keys(rates);
-  var total = 'Total: ' + plural(s.total, 'trip') + (hasPrice() ? (rl.length === 1 ? ' × ' + rl[0] : '') + ' = ' + money(s.amount) + ' JOD' : '');
+  var total = 'Total: ' + plural(s.total, 'trip') + (hasPrice() ? (rl.length === 1 && !lines.some(function (l) { return l.shared; }) ? ' × ' + rl[0] : '') + ' = ' + money(s.amount) + ' JOD' : '');
   return 'Hi ' + name + ', here are my rides for ' + MONTHS[s.m] + ':\n' + lines.map(function (l) { return '• ' + l.label + ': ' + l.text; }).join('\n') + '\n' + total + '\n\nSent from MiDrives';
 }
 function vSettle(k) {
@@ -605,9 +628,9 @@ function vSettle(k) {
   var html = header(MONTHS[s.m] + (s.y !== today0().getFullYear() ? ' ' + s.y : ''));
   html += '<div class="glass card" style="align-items:center;text-align:center;gap:6px;position:relative"><p style="font-size:15px;font-weight:600;color:var(--text2)">' + (s.paidOn ? 'You paid ' : 'You owe ') + driver() + '</p>' +
     '<p><span style="font-size:48px;font-weight:700;font-variant-numeric:tabular-nums">' + money(s.amount) + '</span> <span style="font-size:20px;font-weight:600">JOD</span></p>' +
-    '<p style="font-size:15px;color:var(--text2)">' + plural(s.total, 'trip') + (rate ? ' · ' + money(rate) + ' JOD each' : '') + '</p>' +
+    '<p style="font-size:15px;color:var(--text2)">' + plural(s.total, 'trip') + (lines.some(function (l) { return l.shared; }) ? ' · shared rides split' : rate ? ' · ' + money(rate) + ' JOD each' : '') + '</p>' +
     (s.paidOn ? '<span class="chip paid" style="position:absolute;top:16px;right:16px;font-size:13px;padding:4px 10px">Paid ' + +s.paidOn.slice(8) + ' ' + MONTHS[+s.paidOn.slice(5, 7) - 1].slice(0, 3) + '</span>' : '') + '</div>';
-  html += '<p class="label">Rides</p><div class="glass list">' + (lines.length ? lines.map(function (l) { return '<div class="row"><span class="grow">' + l.label + '</span><span class="val">' + l.text.replace(', ', ' · ').replace(/^t/, 'T').replace(/^b/, 'B') + '</span></div>'; }).join('') : '<div class="row"><span class="grow" style="color:var(--text2)">No rides this month</span></div>') +
+  html += '<p class="label">Rides</p><div class="glass list">' + (lines.length ? lines.map(function (l) { var sp = l.text.match(/split (\d+) ways/); return '<div class="row"><span class="grow" style="white-space:nowrap">' + l.label + '</span><span class="val" style="text-align:right">' + l.text.replace(/ \(split \d+ ways\)/g, '').replace(', ', ' · ').replace(/^t/, 'T').replace(/^b/, 'B') + (sp ? '<span style="display:block;font-size:13px">Split ' + sp[1] + ' ways</span>' : '') + '</span></div>'; }).join('') : '<div class="row"><span class="grow" style="color:var(--text2)">No rides this month</span></div>') +
     '<div class="row" style="font-weight:700"><span class="grow">Total</span><span>' + money(s.amount) + ' JOD</span></div></div>';
   html += s.paidOn ? '<button type="button" class="btn glass" data-act="unpaid" data-k="' + k + '">Mark as Not Paid</button>'
     : '<button type="button" class="btn tint" data-act="paid" data-k="' + k + '"' + (s.amount > 0 ? '' : ' disabled') + '>Mark as Paid</button>';
@@ -624,12 +647,15 @@ function vSettings() {
     '<p class="label">Driver</p><div class="glass list">' +
     '<button type="button" class="row" data-act="go" data-sub="driver"><span class="grow">Name</span><span class="val">' + driver() + '</span>' + I.chev + '</button>' +
     '<button type="button" class="row" data-act="go" data-sub="driver" data-focus="d-phone"><span class="grow">Phone</span><span class="val">' + (esc(data.driver.phone) || 'Not set') + '</span>' + I.chev + '</button>' +
-    '<button type="button" class="row" data-act="go" data-sub="driver"><span class="grow">Price/trip</span><span class="val">' + (hasPrice() ? money(curRate()) + ' JOD' : 'Not set') + '</span>' + I.chev + '</button></div>' +
+    '<button type="button" class="row" data-act="go" data-sub="driver"><span class="grow">Price/trip</span><span class="val">' + (hasPrice() ? money(curRate()) + ' JOD' : 'Not set') + '</span>' + I.chev + '</button>' +
+    '<button type="button" class="row" data-act="go" data-sub="carpool"><span class="grow">Carpool</span><span class="val">' + (cp() ? plural(cpMembers().length, 'rider') : cpServer() ? 'Off' : 'Not set up') + '</span>' + I.chev + '</button></div>' +
     '<p class="label">Schedule</p><div class="glass list">' +
     '<button type="button" class="row" data-act="go" data-sub="schedule"><span class="grow">Work Days</span><span class="val">' + workDaysText() + '</span>' + I.chev + '</button>' +
     '<button type="button" class="row" data-act="go" data-sub="schedule"><span class="grow">Question Times</span><span class="val">' + fmtTime(data.times.m) + ' · ' + fmtTime(data.times.e) + '</span>' + I.chev + '</button></div>' +
+    '<p class="label">Appearance</p><div class="glass seg" role="group" aria-label="Appearance">' + [['auto', 'Automatic'], ['light', 'Light'], ['dark', 'Dark']].map(function (o) { return '<button type="button" data-act="theme" data-v="' + o[0] + '" aria-pressed="' + ((data.theme || 'auto') === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+    '<p class="note">' + ((data.theme || 'auto') === 'auto' ? 'Follows your iPhone, and Today turns to its evening look after ' + fmtTime(data.times.e) + '.' : (data.theme === 'light' ? 'Always light, with the colorful background.' : 'Always dark.')) + '</p>' +
     '<p class="label">Your Data</p><div class="glass list"><button type="button" class="row" data-act="go" data-sub="backup"><span class="grow">Backup &amp; Restore</span><span class="val">' + (data.backupAt ? 'Saved ' + +data.backupAt.slice(8) + ' ' + MONTHS[+data.backupAt.slice(5, 7) - 1].slice(0, 3) : 'Not backed up') + '</span>' + I.chev + '</button></div>' +
-    '<p class="note">Trips are stored on this iPhone only. MiDrives ' + VERSION + '</p>';
+    '<p class="note">' + (cp() ? 'Your trips are stored on this iPhone; carpool rides also sync through your carpool server.' : 'Trips are stored on this iPhone only.') + ' MiDrives ' + VERSION + '</p>';
 }
 function vProfile() {
   var initial = (data.profile.name || '?').charAt(0).toUpperCase();
@@ -643,10 +669,12 @@ function vDriver() {
   return header('Driver') + '<div class="glass list"><label class="field"><span>Name</span><input id="d-name" value="' + esc(data.driver.name) + '" data-bind="driver.name"></label>' +
     '<label class="field"><span>Phone</span><input id="d-phone" type="tel" inputmode="tel" placeholder="' + driver() + '\'s number" value="' + esc(data.driver.phone) + '" data-bind="driver.phone"></label></div>' +
     '<p class="note">The phone number powers the Call button on Today.</p><p class="label">Price/trip</p>' +
+    (cp() && cp().role !== 'organizer' ? '<div class="glass btn" style="font-weight:400;justify-content:space-between"><span>Set by your carpool</span><b>' + (r ? money(r) + ' JOD' : '—') + '</b></div><p class="note">' + esc(cpName((cpMembers().filter(function (m) { return m.role === 'organizer'; })[0] || {}).id)) + ' organizes the carpool and sets the price.</p>' + (r ? '<div class="glass btn" style="font-weight:400;justify-content:space-between"><span>' + MONTHS[t.getMonth()] + ' so far</span><b>' + money(s.amount) + ' JOD</b></div>' : '') : '') +
+    (cp() && cp().role !== 'organizer' ? '' : 
     '<div class="glass" style="border-radius:28px"><div class="stepper"><button type="button" class="glass" data-act="price" data-d="-0.25" aria-label="Lower price">−</button><div><b id="pricev">' + (r ? money(r) : '—') + '</b><small>JOD a trip</small></div><button type="button" class="glass" data-act="price" data-d="0.25" aria-label="Raise price">+</button></div>' +
     '<div class="chips">' + [1.5, 2, 2.5, 3].map(function (v) { var on = Math.abs(v - r) < 0.001; return '<button type="button" class="' + (on ? 'tint' : 'glass') + '" data-act="price" data-v="' + v + '" aria-pressed="' + on + '">' + money(v) + '</button>'; }).join('') + '</div></div>' +
     '<p class="note">A new price applies from today. Past days keep the price they had, so earlier months don\'t change.</p>' +
-    (r ? '<div class="glass btn" style="font-weight:400;justify-content:space-between"><span>' + MONTHS[t.getMonth()] + ' so far</span><b>' + money(s.amount) + ' JOD</b></div>' : '');
+    (r ? '<div class="glass btn" style="font-weight:400;justify-content:space-between"><span>' + MONTHS[t.getMonth()] + ' so far</span><b>' + money(s.amount) + ' JOD</b></div>' : ''));
 }
 function vSchedule() {
   return header('Schedule') + '<p class="label">Work Days</p>' + weekdayPicker() +
@@ -660,12 +688,222 @@ function vBackup() {
     '<button type="button" class="btn glass danger" data-act="askdelete">Delete All Data…</button>';
 }
 
+
+/* ---------- carpool ---------- */
+var CFG = window.MIDRIVES_CONFIG || {};
+var COLORS = ['#0064D2', '#7A3FB8', '#17652D', '#B84A12', '#A80016', '#0E7C86', '#5B4BD6', '#8A5A00'];
+var cpBusy = false, cpAgain = false;
+ui.cpSel = {}; ui.cpMode = null; ui.cpErr = null;
+function cp() { return data.carpool; }
+function cpServer() { return ((data.carpool && data.carpool.server) || CFG.carpoolServer || '').replace(/\/+$/, ''); }
+function cpMe() { return cp() && cp().memberId; }
+function cpMembers() { return (cp() && cp().members) || []; }
+function cpName(id) { if (id === cpMe()) return 'You'; var m = cpMembers().filter(function (x) { return x.id === id; })[0]; return m ? m.name : 'Someone'; }
+function cpColor(id) { var i = cpMembers().map(function (m) { return m.id; }).indexOf(id); return COLORS[(i < 0 ? 0 : i) % COLORS.length]; }
+function inGroupOn(ds) { return !!(cp() && ds >= cp().joinedOn); }
+function parseDs(ds) { return new Date(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10)); }
+function namesText(ids) {
+  var n = ids.slice().sort(function (a, b) { return a === cpMe() ? -1 : b === cpMe() ? 1 : 0; }).map(cpName);
+  return n.length <= 1 ? (n[0] || 'Nobody') : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1];
+}
+function legText(dt, i, v) {
+  var ds = dstr(dt), r = cp() && inGroupOn(ds) && cp().rides[ds] && cp().rides[ds][i ? 'h' : 'w'];
+  if (r) return r.riders.length ? esc(namesText(r.riders)) : 'Nobody';
+  return v ? 'Rode' : 'No ride';
+}
+function api(method, path, body) {
+  var c = cp(), headers = { 'Content-Type': 'application/json' };
+  if (c && c.token) headers.Authorization = 'Bearer ' + c.token;
+  return fetch(cpServer() + path, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined }).then(function (r) {
+    if (r.status === 204) return {};
+    return r.json().catch(function () { return {}; }).then(function (j) {
+      if (!r.ok) { var e = new Error(j.error || 'The carpool server had a problem (' + r.status + ')'); e.status = r.status; throw e; }
+      return j;
+    });
+  }, function () { var e = new Error(navigator.onLine ? 'Couldn\'t reach the carpool server' : 'You\'re offline'); e.status = 0; throw e; });
+}
+function setGroupRec(dt, i, riders) {
+  var rec = (getRec(dt) || [null, null]).slice();
+  if (riders == null) { rec[i] = null; rec[i + 2] = null; }
+  else { rec[i] = riders.indexOf(cpMe()) >= 0 ? 1 : 0; rec[i + 2] = riders.length || null; }
+  setRec(dt, rec);
+}
+function applyGroup(g) {
+  var c = cp(); if (!c) return;
+  var mine = g.members.filter(function (m) { return m.id === c.memberId; })[0];
+  if (!mine) { data.carpool = null; save(); toast('You\'re no longer in the carpool'); return; }
+  c.name = g.name; c.driverName = g.driverName; c.members = g.members; c.prices = g.prices || []; c.rides = g.rides || {}; c.role = mine.role;
+  c.syncedAt = Date.now(); c.error = null;
+  (c.queue || []).forEach(function (q) { var d = c.rides[q.date] || (c.rides[q.date] = {}); if (q.riders == null) delete d[q.leg]; else d[q.leg] = { riders: q.riders, by: c.memberId }; });
+  // server rides decide this phone's records from the day you joined
+  Object.keys(c.rides).forEach(function (ds) {
+    if (ds < c.joinedOn) return;
+    ['w', 'h'].forEach(function (leg, i) { var r = c.rides[ds][leg]; if (r) setGroupRec(parseDs(ds), i, r.riders); });
+  });
+  Object.keys(data.months).forEach(function (k) {
+    Object.keys(data.months[k] || {}).forEach(function (d) {
+      var ds = k + '-' + pad(+d), rec = data.months[k][d];
+      if (ds < c.joinedOn || !rec) return;
+      [0, 1].forEach(function (i) { var leg = i ? 'h' : 'w'; if (rec[i + 2] != null && !(c.rides[ds] && c.rides[ds][leg])) setGroupRec(parseDs(ds), i, null); });
+    });
+  });
+  var gp = c.prices.length ? c.prices[c.prices.length - 1].rate : 0;
+  if (gp && Math.abs(gp - (hasPrice() ? curRate() : 0)) > 0.004) setPrice(gp);
+  save();
+}
+function pushRide(ds, leg, riders) {
+  var c = cp(), d = c.rides[ds] || (c.rides[ds] = {});
+  if (riders == null) delete d[leg]; else d[leg] = { riders: riders, by: c.memberId };
+  c.queue = (c.queue || []).filter(function (q) { return !(q.date === ds && q.leg === leg); });
+  c.queue.push({ date: ds, leg: leg, riders: riders });
+  setGroupRec(parseDs(ds), leg === 'w' ? 0 : 1, riders);
+  cpSync();
+}
+function setMine(dt, i, val) {
+  var ds = dstr(dt), leg = i ? 'h' : 'w';
+  var cur = cp().rides[ds] && cp().rides[ds][leg], riders = (cur ? cur.riders : []).filter(function (x) { return x !== cpMe(); });
+  if (val === 1) riders.push(cpMe());
+  pushRide(ds, leg, val == null && !riders.length ? null : riders);
+}
+function softRender() {
+  if (!data.setup || ui.menu != null || ui.wheel || document.getElementById('sheet').innerHTML) return;
+  var ae = document.activeElement; if (ae && ae.matches && ae.matches('input')) return;
+  var y = window.scrollY; render(); window.scrollTo(0, y);
+}
+function cpSync() {
+  var c = cp(); if (!c) return Promise.resolve();
+  if (cpBusy) { cpAgain = true; return Promise.resolve(); }
+  if (!navigator.onLine) { c.error = 'offline'; return Promise.resolve(); }
+  cpBusy = true;
+  var chain = Promise.resolve();
+  (c.queue || []).slice().forEach(function (item) {
+    chain = chain.then(function () {
+      return api('PUT', '/groups/' + c.groupId + '/rides', item).then(function () { drop(); }, function (e) { if (e.status === 400) drop(); else throw e; });
+      function drop() { if (cp()) cp().queue = cp().queue.filter(function (x) { return !(x.date === item.date && x.leg === item.leg && x.riders === item.riders); }); }
+    });
+  });
+  return chain.then(function () { return api('GET', '/groups/' + c.groupId); }).then(function (j) { applyGroup(j.group); }).catch(function (e) {
+    if (!cp()) return;
+    if (e.status === 401 || e.status === 404) { data.carpool = null; toast('You\'re no longer in this carpool'); }
+    else cp().error = e.status === 0 && !navigator.onLine ? 'offline' : e.message;
+  }).then(function () {
+    cpBusy = false; save(); softRender();
+    if (cpAgain) { cpAgain = false; cpSync(); }
+  });
+}
+function fieldVal(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function startGroup(j, joined) {
+  data.carpool = { server: cpServer(), groupId: j.group.id, memberId: j.me.id, token: j.me.token, joinedOn: dstr(today0()), invite: j.invite || null, queue: [], rides: {}, members: [] };
+  if (!data.profile.name && joined) data.profile.name = joined;
+  applyGroup(j.group); ui.cpMode = null; ui.cpErr = null; save();
+}
+function cpCreate() {
+  var me = fieldVal('cp-name') || data.profile.name || 'Me', name = fieldVal('cp-group') || 'Riding with ' + (data.driver.name || 'our driver');
+  ui.cpErr = null; ui.cpWorking = true; render();
+  api('POST', '/groups', { name: name, driverName: data.driver.name, price: hasPrice() ? curRate() : 0, memberName: me })
+    .then(function (j) { startGroup(j); toast('Carpool started. Invite your friend.'); }, function (e) { ui.cpErr = e.message; })
+    .then(function () { ui.cpWorking = false; render(); });
+}
+function cpJoin() {
+  var code = fieldVal('cp-code').toUpperCase().replace(/[^A-Z0-9]/g, ''), me = fieldVal('cp-name') || data.profile.name || 'Me';
+  if (code.length !== 6) { ui.cpErr = 'The code has 6 letters and numbers.'; render(); return; }
+  ui.cpErr = null; ui.cpWorking = true; render();
+  api('POST', '/join', { code: code, memberName: me })
+    .then(function (j) { startGroup(j, me); toast('You\'re in the carpool'); }, function (e) { ui.cpErr = e.message; ui.cpCode = code; })
+    .then(function () { ui.cpWorking = false; render(); });
+}
+function cpInvite() {
+  ui.cpWorking = true; render();
+  api('POST', '/groups/' + cp().groupId + '/invites').then(function (j) { cp().invite = j.invite; save(); }, function (e) { toast(e.message); })
+    .then(function () { ui.cpWorking = false; render(); });
+}
+function cpShareInvite() {
+  var inv = cp().invite, link = location.origin + location.pathname;
+  shareText('Join my MiDrives carpool for rides with ' + (data.driver.name || 'our driver') + '.\n1. Open ' + link + ' in Safari and add it to your Home Screen.\n2. In Settings › Carpool, tap Join with a code and enter: ' + inv.code + '\nThe code works for 7 days.');
+}
+function cpLeave() {
+  var c = cp();
+  api('DELETE', '/groups/' + c.groupId + '/members/' + c.memberId).then(function () { data.carpool = null; save(); render(); toast('You left the carpool'); }, function (e) {
+    if (e.status === 401 || e.status === 404) { data.carpool = null; save(); render(); } else toast(e.message);
+  });
+}
+function cpOwes(k) {
+  var res = {}; cpMembers().forEach(function (m) { res[m.id] = 0; });
+  Object.keys(cp().rides).forEach(function (ds) {
+    if (ds.slice(0, 7) !== k) return;
+    ['w', 'h'].forEach(function (leg) {
+      var r = cp().rides[ds][leg]; if (!r || !r.riders.length) return;
+      var each = rateOn(ds) / r.riders.length;
+      r.riders.forEach(function (id) { if (id in res) res[id] += each; });
+    });
+  });
+  return res;
+}
+function cpQuestion(p, compact) {
+  var eve = p === 'e', leg = eve ? 'h' : 'w', ids = cpMembers().map(function (m) { return m.id; });
+  var sel = ui.cpSel[leg] || ids, n = sel.length, rate = hasPrice() ? curRate() : 0;
+  var head = eve ? '<span class="dot" style="background:#B84A12">' + I.home + '</span><span style="color:var(--orange)">Ride Home</span>' : '<span class="dot" style="background:#17652D">' + I.work + '</span><span style="color:var(--green)">Ride to Work' + (compact ? ' · this morning' : '') + '</span>';
+  var q = eve ? 'Who\'s riding home with ' + driver() + '?' : compact ? 'Who rode to work with ' + driver() + ' this morning?' : 'Who\'s riding with ' + driver() + ' this morning?';
+  var note = n === 0 ? 'Pick who was in the car.' : !rate ? plural(n, 'rider') : n === 1 ? 'One rider pays the full ' + money(rate) + ' JOD.' : money(rate) + ' JOD split between ' + n + ' · ' + money(rate / n) + ' JOD each';
+  return '<div class="glass card" style="border-radius:32px"><div class="qhead">' + head + '<span class="chip now" style="margin-left:auto">Carpool</span></div><h2 class="q"' + (compact ? ' style="font-size:20px"' : '') + '>' + q + '</h2>' +
+    '<div style="display:flex;flex-direction:column;gap:8px">' + cpMembers().map(function (m) {
+      var on = sel.indexOf(m.id) >= 0;
+      return '<button type="button" class="who" aria-pressed="' + on + '" data-act="cpsel" data-leg="' + leg + '" data-id="' + esc(m.id) + '"><span class="av" style="background:' + cpColor(m.id) + '">' + esc((m.name || '?').charAt(0).toUpperCase()) + '</span><span style="flex:1">' + esc(m.name) + (m.id === cpMe() ? ' <span style="color:var(--text2);font-weight:400">(You)</span>' : '') + '</span><span class="tick">' + (on ? I.check : '') + '</span></button>';
+    }).join('') + '</div><p style="font-size:14px;color:var(--text2);text-align:center">' + note + '</p>' +
+    '<div class="two"><button type="button" class="btn glass" data-act="cplog" data-leg="' + leg + '" data-none="1">Nobody</button><button type="button" class="btn tint' + (eve ? ' eve' : '') + '" data-act="cplog" data-leg="' + leg + '"' + (n ? '' : ' disabled') + '>Log Ride</button></div></div>';
+}
+function vCarpool() {
+  var html = header('Carpool'), people = '<svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="#fff"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0z"/><circle cx="17" cy="9" r="2.8"/><path d="M15.5 13.2A5.5 5.5 0 0 1 21.5 19h-4.3a8 8 0 0 0-1.7-5.8z"/></svg>';
+  if (!cpServer()) {
+    return html + '<div class="glass card" style="align-items:center;text-align:center;gap:10px"><span class="dot" style="width:60px;height:60px;background:#7A3FB8">' + people + '</span><h2 class="q" style="font-size:22px">Carpool isn\'t set up yet</h2><p style="font-size:15px;color:var(--text2);line-height:1.4">Sharing rides between phones needs a carpool server. Once it\'s connected, you can start a carpool here, invite friends with a code, and split each ride\'s price.</p></div>' +
+      '<p class="note">For whoever runs the server: see server/README.md in the MiDrives repo, then put the server\'s address in config.js.</p>';
+  }
+  if (!cp()) {
+    var mode = ui.cpMode, busy = ui.cpWorking ? ' disabled' : '';
+    html += '<div class="hero"><span class="ic" style="background:#7A3FB8">' + people + '</span><h1 class="title" style="font-size:28px">Ride with others?</h1><p>If someone shares ' + driver() + ' with you, each ride\'s price is split between whoever was in the car.</p></div>';
+    if (mode === 'start') {
+      html += '<div class="glass list"><label class="field"><span>Your name</span><input id="cp-name" value="' + esc(data.profile.name) + '" placeholder="Your first name"></label>' +
+        '<label class="field"><span>Name</span><input id="cp-group" placeholder="Riding with ' + driver() + '"></label></div>' +
+        '<p class="note">Price/trip: ' + (hasPrice() ? money(curRate()) + ' JOD. As the organizer, you set it for everyone.' : 'not set yet. Add it in Settings › Driver.') + '</p>' +
+        (ui.cpErr ? '<p class="err">' + esc(ui.cpErr) + '</p>' : '') +
+        '<button type="button" class="btn tint" data-act="cpcreate"' + busy + '>' + (ui.cpWorking ? 'Starting…' : 'Start Carpool') + '</button><button type="button" class="btn glass" data-act="cpmode">Cancel</button>';
+    } else if (mode === 'join') {
+      html += '<input id="cp-code" class="codein" maxlength="6" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="K7Q2XM" aria-label="Invite code" value="' + esc(ui.cpCode || '') + '">' +
+        '<div class="glass list"><label class="field"><span>Your name</span><input id="cp-name" value="' + esc(data.profile.name) + '" placeholder="Your first name"></label></div>' +
+        '<p class="note">It\'s the 6-character code in the invite. Codes work for 7 days.</p>' + (ui.cpErr ? '<p class="err">' + esc(ui.cpErr) + '</p>' : '') +
+        '<button type="button" class="btn tint" data-act="cpjoin"' + busy + '>' + (ui.cpWorking ? 'Joining…' : 'Join Carpool') + '</button><button type="button" class="btn glass" data-act="cpmode">Cancel</button>';
+    } else {
+      html += '<button type="button" class="glass card" data-act="cpmode" data-v="start" style="flex-direction:row;align-items:center;padding:16px;text-align:left"><span class="av" style="width:44px;height:44px;background:#7A3FB8">+</span><span style="flex:1"><b style="display:block;font-size:17px">Start a carpool</b><span style="font-size:14px;color:var(--text2)">Invite the people you ride with and split the price.</span></span>' + I.chev + '</button>' +
+        '<button type="button" class="glass card" data-act="cpmode" data-v="join" style="flex-direction:row;align-items:center;padding:16px;text-align:left"><span class="av" style="width:44px;height:44px;background:#17652D">#</span><span style="flex:1"><b style="display:block;font-size:17px">Join with a code</b><span style="font-size:14px;color:var(--text2)">Someone already invited you.</span></span>' + I.chev + '</button>';
+    }
+    return html;
+  }
+  var c = cp(), t = today0(), k = mkey(t.getFullYear(), t.getMonth()), owes = cpOwes(k), org = c.role === 'organizer';
+  var inv = c.invite && Date.parse(c.invite.expiresAt) > Date.now() ? c.invite : null;
+  html += '<div class="glass card" style="flex-direction:row;align-items:center;padding:14px 16px;gap:12px"><span class="av" style="width:44px;height:44px;background:#17652D"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M5 11l1.6-4.3A2 2 0 0 1 8.5 5.4h7a2 2 0 0 1 1.9 1.3L19 11a2 2 0 0 1 1 1.7V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3A2 2 0 0 1 5 11z"/></svg></span><span style="flex:1"><b style="display:block;font-size:17px">' + esc(c.name) + '</b><span style="font-size:14px;color:var(--text2)">' + (hasPrice() ? money(curRate()) + ' JOD a trip · ' : '') + 'Home ↔ Work</span></span></div>';
+  html += '<p class="label">Members</p><div class="glass list">' + cpMembers().map(function (m) {
+    var me = m.id === c.memberId;
+    return '<div class="row" style="min-height:62px"><span class="av" style="background:' + cpColor(m.id) + '">' + esc((m.name || '?').charAt(0).toUpperCase()) + '</span><span class="grow"><span style="display:block;font-weight:600">' + esc(m.name) + (me ? ' (You)' : '') + '</span><span style="font-size:13px;color:var(--text2)">' + (m.role === 'organizer' ? 'Organizer' : 'Joined ' + +m.joinedOn.slice(8) + ' ' + MONTHS[+m.joinedOn.slice(5, 7) - 1].slice(0, 3)) + '</span></span>' +
+      (org && !me ? '<button type="button" class="btn danger" data-act="cpremove" data-id="' + esc(m.id) + '" style="min-height:44px;padding:0 10px;font-size:15px;background:none;border:0">Remove</button>' : '') + '</div>';
+  }).join('') + '</div>';
+  if (inv) html += '<div class="glass card" style="align-items:center;text-align:center;gap:8px"><p style="font-size:14px;font-weight:600;color:var(--text2)">Invite code</p><p class="code">' + esc(inv.code) + '</p><p style="font-size:13px;color:var(--text2)">Works until ' + new Date(inv.expiresAt).getDate() + ' ' + MONTHS[new Date(inv.expiresAt).getMonth()] + '. They\'ll need MiDrives on their iPhone.</p><button type="button" class="btn tint" data-act="cpshare" style="width:100%">' + I.share + 'Share Invite</button></div>';
+  else html += '<button type="button" class="btn glass link" data-act="cpinvite"' + (ui.cpWorking ? ' disabled' : '') + '>+ Invite Someone</button>';
+  html += '<p class="label">' + MONTHS[t.getMonth()] + ' · each person owes</p><div class="glass list">' + cpMembers().map(function (m) {
+    return '<div class="row"><span class="grow">' + esc(m.name) + (m.id === c.memberId ? ' (You)' : '') + '</span><b style="font-variant-numeric:tabular-nums">' + money(owes[m.id] || 0) + ' JOD</b></div>';
+  }).join('') + '</div><p class="note">Each ride costs ' + (hasPrice() ? money(curRate()) + ' JOD' : 'the price/trip') + ' and is split between whoever was in the car.</p>';
+  var st = c.error === 'offline' ? 'Offline. Your answers will sync when you\'re back online.' : c.error ? esc(c.error) + '. Tap to try again.' : c.syncedAt ? 'Synced ' + (Date.now() - c.syncedAt < 90000 ? 'just now' : 'at ' + fmtTime(new Date(c.syncedAt).getHours() * 60 + new Date(c.syncedAt).getMinutes())) : 'Not synced yet';
+  html += '<button type="button" class="note" data-act="cpsync" style="border:0;background:none;text-align:left;padding:0;' + (c.error && c.error !== 'offline' ? 'color:var(--red)' : '') + '">' + st + ((c.queue || []).length ? ' · ' + plural(c.queue.length, 'change') + ' waiting' : '') + '</button>';
+  html += '<button type="button" class="btn glass danger" data-act="cpleave">Leave Carpool</button>';
+  return html;
+}
+
 /* ---------- render ---------- */
 var isDarkPref = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 function render() {
   var setup = !data.setup, html;
   document.body.classList.toggle('setup', setup);
-  var dark = (isDarkPref && isDarkPref.matches) || (!setup && ui.tab === 'today' && !ui.sub && phase() === 'e');
+  var th = data.theme || 'auto';
+  var dark = th === 'dark' || (th === 'auto' && ((isDarkPref && isDarkPref.matches) || (!setup && ui.tab === 'today' && !ui.sub && phase() === 'e')));
   document.documentElement.classList.toggle('dark', !!dark);
   if (setup) html = vSetup();
   else if (ui.sub === 'settle') html = vSettle(ui.subK);
@@ -673,6 +911,7 @@ function render() {
   else if (ui.sub === 'driver') html = vDriver();
   else if (ui.sub === 'schedule') html = vSchedule();
   else if (ui.sub === 'backup') html = vBackup();
+  else if (ui.sub === 'carpool') html = vCarpool();
   else html = { today: vToday, month: vMonth, history: vHistory, settings: vSettings }[ui.tab]();
   var route = setup ? 'setup' + ui.step : ui.tab + '/' + (ui.sub || '') + (ui.tab === 'month' ? ui.viewY + '-' + ui.viewM : '');
   viewEl.className = route !== ui.lastRoute ? 'enter' : '';
@@ -748,12 +987,19 @@ document.addEventListener('click', function (e) {
       var rec = (getRec(t) || [null, null]).slice(); rec[a.dataset.p === 'm' ? 0 : 1] = +a.dataset.v; setRec(t, rec); render();
       toast(+a.dataset.v ? 'Logged. Have a good ride.' : 'Got it, no ride.'); break; }
     case 'undo': {
-      var r2 = (getRec(t) || [null, null]).slice(); r2[a.dataset.p === 'm' ? 0 : 1] = null; setRec(t, r2); render(); break; }
+      var ui2 = a.dataset.p === 'm' ? 0 : 1, ds2 = dstr(t);
+      if (cp() && inGroupOn(ds2)) {
+        var gr = cp().rides[ds2] && cp().rides[ds2][ui2 ? 'h' : 'w'];
+        if (gr && gr.by && gr.by !== cpMe() && gr.riders.some(function (x) { return x !== cpMe(); })) setMine(t, ui2, 0); else pushRide(ds2, ui2 ? 'h' : 'w', null);
+        render(); break;
+      }
+      var r2 = (getRec(t) || [null, null]).slice(); r2[ui2] = null; r2[ui2 + 2] = null; setRec(t, r2); render(); break; }
     case 'anyway': ui.anyway = true; render(); break;
     case 'csel': ui.catchSel[+a.dataset.i] = ui.catchSel[+a.dataset.i] ? 0 : 1; render(); break;
     case 'csave': {
       var p = lastWorkDayBefore(t), v = a.dataset.none ? [0, 0] : [ui.catchSel[0], ui.catchSel[1]];
-      setRec(p, v); ui.catchSel = [0, 0]; render(); toast(WDL[p.getDay()] + ' saved'); break; }
+      if (cp() && inGroupOn(dstr(p))) { setMine(p, 0, v[0]); setMine(p, 1, v[1]); } else setRec(p, v);
+      ui.catchSel = [0, 0]; render(); toast(WDL[p.getDay()] + ' saved'); break; }
     case 'mprev': ui.viewM--; if (ui.viewM < 0) { ui.viewM = 11; ui.viewY--; } ui.menu = null; render(); break;
     case 'mnext': ui.viewM++; if (ui.viewM > 11) { ui.viewM = 0; ui.viewY++; } ui.menu = null; render(); break;
     case 'menu': {
@@ -768,7 +1014,9 @@ document.addEventListener('click', function (e) {
       else if (vv === 'h') { cur[1] = cur[1] === 1 ? 0 : 1; if (cur[0] == null) cur[0] = 0; }
       else if (vv === 'both') cur = [1, 1]; else cur = [0, 0];
       if (dt.getTime() === t.getTime()) { if (vv === 'w' && cur[1] === 0 && phase() === 'm') cur[1] = null; }
-      setRec(dt, cur); var y2 = window.scrollY; ui.menu = null; render(); window.scrollTo(0, y2); break; }
+      if (cp() && inGroupOn(dstr(dt))) { var before = getRec(dt) || [null, null]; [0, 1].forEach(function (i) { if (before[i] !== cur[i]) setMine(dt, i, cur[i]); }); }
+      else { cur[2] = cur[0] === 1 ? (cur[2] || null) : null; cur[3] = cur[1] === 1 ? (cur[3] || null) : null; setRec(dt, cur); }
+      var y2 = window.scrollY; ui.menu = null; render(); window.scrollTo(0, y2); break; }
     case 'openmonth': ui.tab = 'month'; ui.sub = null; ui.viewY = +a.dataset.k.slice(0, 4); ui.viewM = +a.dataset.k.slice(5) - 1; render(); break;
     case 'paid': data.paid[a.dataset.k] = { date: dstr(t), amount: monthStats(a.dataset.k).amount }; save(); render(); toast('Marked as paid'); break;
     case 'unpaid': delete data.paid[a.dataset.k]; save(); render(); break;
@@ -781,7 +1029,28 @@ document.addEventListener('click', function (e) {
     case 'wpick': { var col = a.parentNode; col.scrollTo({ top: +a.dataset.i * ITEM, behavior: 'smooth' }); break; }
     case 'price': {
       var base = hasPrice() ? curRate() : 2.5;
-      setPrice(a.dataset.v != null ? +a.dataset.v : (hasPrice() ? base + +a.dataset.d : 2.5)); render(); break; }
+      setPrice(a.dataset.v != null ? +a.dataset.v : (hasPrice() ? base + +a.dataset.d : 2.5)); render();
+      if (cp() && cp().role === 'organizer') api('PATCH', '/groups/' + cp().groupId, { price: curRate() }).then(function () { cpSync(); }, function () { toast('Price saved here; the carpool will update when you\'re online'); });
+      break; }
+    case 'theme': data.theme = a.dataset.v; save(); render(); break;
+    case 'cpmode': ui.cpMode = a.dataset.v || null; ui.cpErr = null; render(); if (ui.cpMode) { var fi = document.getElementById(ui.cpMode === 'join' ? 'cp-code' : 'cp-name'); if (fi) fi.focus(); } break;
+    case 'cpcreate': cpCreate(); break;
+    case 'cpjoin': cpJoin(); break;
+    case 'cpinvite': cpInvite(); break;
+    case 'cpshare': cpShareInvite(); break;
+    case 'cpsel': {
+      var lg = a.dataset.leg, list = (ui.cpSel[lg] || cpMembers().map(function (m) { return m.id; })).slice(), at = list.indexOf(a.dataset.id);
+      if (at >= 0) list.splice(at, 1); else list.push(a.dataset.id);
+      ui.cpSel[lg] = list; render(); break; }
+    case 'cplog': {
+      var lg2 = a.dataset.leg, riders = a.dataset.none ? [] : (ui.cpSel[lg2] || cpMembers().map(function (m) { return m.id; }));
+      pushRide(dstr(t), lg2, riders.slice()); ui.cpSel[lg2] = null; render();
+      toast(riders.length ? 'Logged for ' + namesText(riders).replace(/^You\b/, 'you') : 'Got it, nobody rode'); break; }
+    case 'cpsync': cpSync(); toast('Syncing…'); break;
+    case 'cpleave': sheet('<h2>Leave the carpool?</h2><p>Rides you already logged stay in your months. You can join again later with a new code.</p><button type="button" class="btn tint" style="background:#A80016" data-act="cpleavego">Leave Carpool</button><button type="button" class="btn glass" data-act="closesheet">Cancel</button>'); break;
+    case 'cpleavego': closeSheet(); cpLeave(); break;
+    case 'cpremove': sheet('<h2>Remove ' + esc(cpName(a.dataset.id)) + '?</h2><p>They\'ll stop seeing the carpool. Their past rides stay counted.</p><button type="button" class="btn tint" style="background:#A80016" data-act="cpremovego" data-id="' + esc(a.dataset.id) + '">Remove</button><button type="button" class="btn glass" data-act="closesheet">Cancel</button>'); break;
+    case 'cpremovego': closeSheet(); api('DELETE', '/groups/' + cp().groupId + '/members/' + a.dataset.id).then(function () { return cpSync(); }, function (e) { toast(e.message); }); break;
     case 'backup': doBackup(); break;
     case 'restore': document.getElementById('restoreFile').click(); break;
     case 'askdelete': sheet('<h2>Delete all data?</h2><p>Every month, price and payment on this iPhone will be erased. This can\'t be undone.</p><button type="button" class="btn tint" style="background:#A80016" data-act="dodelete">Delete Everything</button><button type="button" class="btn glass" data-act="closesheet">Cancel</button>'); break;
@@ -840,13 +1109,15 @@ setInterval(function () {
   var ph = phase(), dy = dstr(today0());
   if ((ph !== lastPhase || dy !== lastDay) && data.setup && !ui.sub && ui.menu == null && !document.activeElement.matches('input')) { lastPhase = ph; lastDay = dy; ui.anyway = false; render(); }
 }, 10000);
-document.addEventListener('visibilitychange', function () { if (!document.hidden && data.setup && !ui.sub && ui.menu == null) { render(); if (ui.tab === 'today') loadWeather(); } });
-window.addEventListener('online', function () { loadWeather(true); });
+document.addEventListener('visibilitychange', function () { if (document.hidden) return; if (data.setup && !ui.sub && ui.menu == null) { render(); if (ui.tab === 'today') loadWeather(); } cpSync(); });
+setInterval(function () { if (!document.hidden) cpSync(); }, 60000);
+window.addEventListener('online', function () { loadWeather(true); cpSync(); });
 window.addEventListener('offline', function () { if (ui.tab === 'today' && !ui.sub) render(); });
 if (isDarkPref && isDarkPref.addEventListener) isDarkPref.addEventListener('change', render);
 
 render();
 if (data.setup) loadWeather();
+cpSync();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
 </script>
