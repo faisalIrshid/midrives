@@ -224,7 +224,7 @@ button:active:not([disabled]),a:active{transform:scale(.96)}
 <script>
 (function () {
 'use strict';
-var VERSION = '2.1.1';
+var VERSION = '2.2';
 var KEY = 'drivertrips:v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -261,7 +261,7 @@ function mkey(y, m) { return y + '-' + pad(m + 1); }
 function today0() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
 function blank() {
   return { v: 2, setup: false, since: dstr(today0()), profile: { name: '', city: '' }, driver: { name: 'Loay', phone: '' },
-    prices: [], workDays: [1, 2, 3, 4, 5], times: { m: 420, e: 960 }, months: {}, paid: {}, geo: null, theme: 'auto', carpool: null };
+    prices: [], workDays: [1, 2, 3, 4, 5], times: { m: 420, e: 960 }, months: {}, paid: {}, geo: null, theme: 'auto', carpool: null, push: null };
 }
 var data = blank();
 (function load() {
@@ -650,7 +650,8 @@ function vSettings() {
     '<button type="button" class="row" data-act="go" data-sub="carpool"><span class="grow">Carpool</span><span class="val">' + (cp() ? plural(cpMembers().length, 'rider') : cpServer() ? 'Off' : 'Not set up') + '</span>' + I.chev + '</button></div>' +
     '<p class="label">Schedule</p><div class="glass list">' +
     '<button type="button" class="row" data-act="go" data-sub="schedule"><span class="grow">Work Days</span><span class="val">' + workDaysText() + '</span>' + I.chev + '</button>' +
-    '<button type="button" class="row" data-act="go" data-sub="schedule"><span class="grow">Question Times</span><span class="val">' + fmtTime(data.times.m) + ' · ' + fmtTime(data.times.e) + '</span>' + I.chev + '</button></div>' +
+    '<button type="button" class="row" data-act="go" data-sub="schedule"><span class="grow">Question Times</span><span class="val">' + fmtTime(data.times.m) + ' · ' + fmtTime(data.times.e) + '</span>' + I.chev + '</button>' +
+    '<button type="button" class="row" data-act="go" data-sub="schedule"><span class="grow">Reminders</span><span class="val">' + (data.push ? 'On' : 'Off') + '</span>' + I.chev + '</button></div>' +
     '<p class="label">Appearance</p><div class="glass seg" role="group" aria-label="Appearance">' + [['auto', 'Automatic'], ['light', 'Light'], ['dark', 'Dark']].map(function (o) { return '<button type="button" data-act="theme" data-v="' + o[0] + '" aria-pressed="' + ((data.theme || 'auto') === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
     '<p class="note">' + ((data.theme || 'auto') === 'auto' ? 'Follows your iPhone, and Today turns to its evening look after ' + fmtTime(data.times.e) + '.' : (data.theme === 'light' ? 'Always light, with the colorful background.' : 'Always dark.')) + '</p>' +
     '<p class="label">Your Data</p><div class="glass list"><button type="button" class="row" data-act="go" data-sub="backup"><span class="grow">Backup &amp; Restore</span><span class="val">' + (data.backupAt ? 'Saved ' + +data.backupAt.slice(8) + ' ' + MONTHS[+data.backupAt.slice(5, 7) - 1].slice(0, 3) : 'Not backed up') + '</span>' + I.chev + '</button></div>' +
@@ -678,7 +679,7 @@ function vDriver() {
 function vSchedule() {
   return header('Schedule') + '<p class="label">Work Days</p>' + weekdayPicker() +
     '<p class="note">' + (data.workDays.length ? plural(data.workDays.length, 'work day') + ' a week. Days off are left out of Month and never asked about.' : 'Pick at least one day, or the app has nothing to ask.') + '</p>' +
-    '<p class="label">Question Times</p>' + timeRows('Today asks about the ride to work until the evening time, then about the ride home.');
+    '<p class="label">Question Times</p>' + timeRows('Today asks about the ride to work until the evening time, then about the ride home.') + remindersBlock();
 }
 function vBackup() {
   return header('Backup') + '<div class="glass card" style="align-items:center;text-align:center;gap:8px"><span class="dot tint" style="width:52px;height:52px">' + I.share.replace('width="18" height="18"', 'width="24" height="24"') + '</span><h2 style="font-size:20px">' + (data.backupAt ? 'Last backup ' + +data.backupAt.slice(8) + ' ' + MONTHS[+data.backupAt.slice(5, 7) - 1] : 'Not backed up yet') + '</h2><p style="font-size:15px;color:var(--text2);line-height:1.35">Your trips live only on this iPhone. A backup is one small file you can keep in Files or iCloud Drive.</p></div>' +
@@ -710,9 +711,10 @@ function legText(dt, i, v) {
   if (r) return r.riders.length ? esc(namesText(r.riders)) : 'Nobody';
   return v ? 'Rode' : 'No ride';
 }
-function api(method, path, body) {
+function api(method, path, body, token) {
   var c = cp(), headers = { 'Content-Type': 'application/json' };
-  if (c && c.token) headers.Authorization = 'Bearer ' + c.token;
+  if (token === undefined) token = c && c.token;
+  if (token) headers.Authorization = 'Bearer ' + token;
   return fetch(cpServer() + path, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined }).then(function (r) {
     if (r.status === 204) return {};
     return r.json().catch(function () { return {}; }).then(function (j) {
@@ -794,7 +796,7 @@ function fieldVal(id) { var el = document.getElementById(id); return el ? el.val
 function startGroup(j, joined) {
   data.carpool = { server: cpServer(), groupId: j.group.id, memberId: j.me.id, token: j.me.token, joinedOn: dstr(today0()), invite: j.invite || null, queue: [], rides: {}, members: [] };
   if (!data.profile.name && joined) data.profile.name = joined;
-  applyGroup(j.group); ui.cpMode = null; ui.cpErr = null; save();
+  applyGroup(j.group); ui.cpMode = null; ui.cpErr = null; save(); pushUpdate();
 }
 function cpCreate() {
   var me = fieldVal('cp-name') || data.profile.name || 'Me', name = fieldVal('cp-group') || 'Riding with ' + (data.driver.name || 'our driver');
@@ -822,7 +824,7 @@ function cpShareInvite() {
 }
 function cpLeave() {
   var c = cp();
-  api('DELETE', '/groups/' + c.groupId + '/members/' + c.memberId).then(function () { data.carpool = null; save(); render(); toast('You left the carpool'); }, function (e) {
+  api('DELETE', '/groups/' + c.groupId + '/members/' + c.memberId).then(function () { data.carpool = null; save(); pushUpdate(); render(); toast('You left the carpool'); }, function (e) {
     if (e.status === 401 || e.status === 404) { data.carpool = null; save(); render(); } else toast(e.message);
   });
 }
@@ -896,6 +898,61 @@ function vCarpool() {
   return html;
 }
 
+
+/* ---------- reminders (web push through the MiDrives server) ---------- */
+var pushTimer = null;
+function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function isStandalone() { return window.navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); }
+function keyBytes(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '===='.slice((s.length % 4) || 4); var r = atob(s), a = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i); return a; }
+function pushExtras() {
+  var tz = 'UTC'; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) {}
+  return { schedule: { m: data.times.m, e: data.times.e, days: data.workDays.slice(), tz: tz }, driverName: data.driver.name || '', carpool: cp() ? { groupId: cp().groupId, memberId: cp().memberId } : null };
+}
+function remindersOn() {
+  ui.pushBusy = true; ui.pushErr = null;
+  var perm = Notification.requestPermission(); // must run straight from the tap on iPhone
+  render();
+  Promise.resolve(perm).then(function (p) {
+    if (p !== 'granted') throw new Error(p === 'denied' ? 'denied' : 'Notifications weren\'t allowed.');
+    return Promise.all([navigator.serviceWorker.ready, api('GET', '/push/key', null, null)]);
+  }).then(function (r) {
+    return r[0].pushManager.getSubscription().then(function (old) { return old || r[0].pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(r[1].publicKey) }); });
+  }).then(function (sub) {
+    return api('POST', '/push/subscribe', Object.assign({ subscription: sub.toJSON() }, pushExtras()), null);
+  }).then(function (j) { data.push = { id: j.id, token: j.token }; save(); toast('Reminders on'); }, function (e) { ui.pushErr = e.message; })
+    .then(function () { ui.pushBusy = false; render(); });
+}
+function remindersOff() {
+  var p = data.push; data.push = null; save(); render();
+  if (p) api('DELETE', '/push/' + p.id, null, p.token).catch(function () {});
+  if (pushSupported()) navigator.serviceWorker.ready.then(function (r) { return r.pushManager.getSubscription(); }).then(function (s) { if (s) s.unsubscribe(); }).catch(function () {});
+  toast('Reminders off');
+}
+function pushUpdate(extra) {
+  if (!data.push || !cpServer()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(function () {
+    var p = data.push; if (!p) return;
+    api('PUT', '/push/' + p.id, Object.assign(pushExtras(), extra || {}), p.token).catch(function (e) { if (e.status === 401 || e.status === 404) { data.push = null; save(); } });
+  }, extra ? 0 : 800);
+}
+function pushAnswered(dt, leg) {
+  if (!data.push || dstr(dt) !== dstr(today0())) return;
+  var a = { date: dstr(dt) }; a[leg] = true;
+  pushUpdate({ answered: a });
+}
+function remindersBlock() {
+  var html = '<p class="label">Reminders</p>', on = !!data.push;
+  var times = fmtTime(data.times.m) + ' and ' + fmtTime(data.times.e);
+  if (!cpServer()) return html + '<div class="glass btn" style="justify-content:space-between;font-weight:400"><span>Notifications</span><span style="color:var(--text2)">Not set up</span></div><p class="note">Reminders are sent by your MiDrives server, which isn\'t set up yet. Until then, open MiDrives to answer.</p>';
+  if (!pushSupported() || !isStandalone()) return html + '<div class="glass btn" style="justify-content:space-between;font-weight:400"><span>Notifications</span><span style="color:var(--text2)">Home Screen only</span></div><p class="note">iPhone only sends notifications to apps opened from the Home Screen. In Safari, tap Share › Add to Home Screen, then open MiDrives from its icon and turn reminders on here.</p>';
+  if (Notification.permission === 'denied' || ui.pushErr === 'denied') return html + '<div class="glass btn" style="justify-content:space-between;font-weight:400"><span>Notifications</span><span style="color:var(--red)">Blocked</span></div><p class="note">To allow them, open iPhone Settings › Notifications › MiDrives and turn on Allow Notifications.</p>';
+  html += '<div class="glass list"><div class="timerow"><span style="flex:1">Ask me with a notification</span><button type="button" role="switch" class="switch" aria-checked="' + on + '" aria-label="Reminders" data-act="pushtoggle"' + (ui.pushBusy ? ' disabled' : '') + '><span></span></button></div></div>';
+  html += '<p class="note">' + (on ? 'You\'ll get a notification at ' + times + ' on work days, unless you\'ve already answered. Tap it to answer.' : 'Get a notification at ' + times + ' on work days.') + '</p>';
+  if (ui.pushErr) html += '<p class="err">' + esc(ui.pushErr) + '</p>';
+  return html;
+}
+
 /* ---------- render ---------- */
 var isDarkPref = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 function render() {
@@ -937,7 +994,7 @@ function wheelChanged(col) {
   var idx = [].map.call(cols, function (c, i) { var max = i === 0 ? 11 : i === 1 ? 59 : 1; return Math.max(0, Math.min(max, Math.round(c.scrollTop / ITEM))); });
   var h = (idx[0] + 1) % 12 + (idx[2] ? 12 : 0), mins = h * 60 + idx[1];
   if (mins === data.times[w]) return;
-  data.times[w] = mins; save();
+  data.times[w] = mins; save(); pushUpdate();
   var pill = document.getElementById('pill-' + w); if (pill) pill.textContent = fmtTime(mins);
   var bad = data.times.e <= data.times.m, warn = document.getElementById('timewarn');
   // re-render only the note under the wheels without disturbing scroll
@@ -983,7 +1040,7 @@ document.addEventListener('click', function (e) {
       if (a.dataset.focus) { var el = document.getElementById(a.dataset.focus); if (el) el.focus(); }
       break;
     case 'ans': {
-      var rec = (getRec(t) || [null, null]).slice(); rec[a.dataset.p === 'm' ? 0 : 1] = +a.dataset.v; setRec(t, rec); render();
+      var rec = (getRec(t) || [null, null]).slice(); rec[a.dataset.p === 'm' ? 0 : 1] = +a.dataset.v; setRec(t, rec); pushAnswered(t, a.dataset.p); render();
       toast(+a.dataset.v ? 'Logged. Have a good ride.' : 'Got it, no ride.'); break; }
     case 'undo': {
       var ui2 = a.dataset.p === 'm' ? 0 : 1, ds2 = dstr(t);
@@ -1015,6 +1072,7 @@ document.addEventListener('click', function (e) {
       if (dt.getTime() === t.getTime()) { if (vv === 'w' && cur[1] === 0 && phase() === 'm') cur[1] = null; }
       if (cp() && inGroupOn(dstr(dt))) { var before = getRec(dt) || [null, null]; [0, 1].forEach(function (i) { if (before[i] !== cur[i]) setMine(dt, i, cur[i]); }); }
       else { cur[2] = cur[0] === 1 ? (cur[2] || null) : null; cur[3] = cur[1] === 1 ? (cur[3] || null) : null; setRec(dt, cur); }
+      if (vv === 'w' || vv === 'both' || vv === 'none') pushAnswered(dt, 'm'); if (vv === 'h' || vv === 'both' || vv === 'none') pushAnswered(dt, 'e');
       var y2 = window.scrollY; ui.menu = null; render(); window.scrollTo(0, y2); break; }
     case 'openmonth': ui.tab = 'month'; ui.sub = null; ui.viewY = +a.dataset.k.slice(0, 4); ui.viewM = +a.dataset.k.slice(5) - 1; render(); break;
     case 'paid': data.paid[a.dataset.k] = { date: dstr(t), amount: monthStats(a.dataset.k).amount }; save(); render(); toast('Marked as paid'); break;
@@ -1023,7 +1081,7 @@ document.addEventListener('click', function (e) {
     case 'wd': {
       var di = +a.dataset.d, ix = data.workDays.indexOf(di);
       if (ix >= 0) data.workDays.splice(ix, 1); else data.workDays.push(di);
-      data.workDays.sort(); save(); render(); break; }
+      data.workDays.sort(); save(); pushUpdate(); render(); break; }
     case 'wheel': ui.wheel = ui.wheel === a.dataset.w ? null : a.dataset.w; var y3 = window.scrollY; render(); window.scrollTo(0, y3); break;
     case 'wpick': { var col = a.parentNode; col.scrollTo({ top: +a.dataset.i * ITEM, behavior: 'smooth' }); break; }
     case 'price': {
@@ -1032,6 +1090,7 @@ document.addEventListener('click', function (e) {
       if (cp() && cp().role === 'organizer') api('PATCH', '/groups/' + cp().groupId, { price: curRate() }).then(function () { cpSync(); }, function () { toast('Price saved here; the carpool will update when you\'re online'); });
       break; }
     case 'theme': data.theme = a.dataset.v; save(); render(); break;
+    case 'pushtoggle': if (data.push) remindersOff(); else remindersOn(); break;
     case 'cpmode': ui.cpMode = a.dataset.v || null; ui.cpErr = null; render(); if (ui.cpMode) { var fi = document.getElementById(ui.cpMode === 'join' ? 'cp-code' : 'cp-name'); if (fi) fi.focus(); } break;
     case 'cpcreate': cpCreate(); break;
     case 'cpjoin': cpJoin(); break;
@@ -1043,7 +1102,7 @@ document.addEventListener('click', function (e) {
       ui.cpSel[lg] = list; render(); break; }
     case 'cplog': {
       var lg2 = a.dataset.leg, riders = a.dataset.none ? [] : (ui.cpSel[lg2] || cpMembers().map(function (m) { return m.id; }));
-      pushRide(dstr(t), lg2, riders.slice()); ui.cpSel[lg2] = null; render();
+      pushRide(dstr(t), lg2, riders.slice()); ui.cpSel[lg2] = null; pushAnswered(t, lg2 === 'w' ? 'm' : 'e'); render();
       toast(riders.length ? 'Logged for ' + namesText(riders).replace(/^You\b/, 'you') : 'Got it, nobody rode'); break; }
     case 'cpsync': cpSync(); toast('Syncing…'); break;
     case 'cpleave': sheet('<h2>Leave the carpool?</h2><p>Rides you already logged stay in your months. You can join again later with a new code.</p><button type="button" class="btn tint" style="background:#A80016" data-act="cpleavego">Leave Carpool</button><button type="button" class="btn glass" data-act="closesheet">Cancel</button>'); break;
@@ -1060,7 +1119,7 @@ document.addEventListener('click', function (e) {
 document.addEventListener('input', function (e) {
   var el = e.target, b = el.dataset && el.dataset.bind; if (!b) return;
   if (b === 'price') { var v = parseFloat(el.value.replace(',', '.')); if (v > 0) setPrice(v); else if (!el.value.trim()) { data.prices = []; save(); } return; }
-  var parts = b.split('.'); data[parts[0]][parts[1]] = el.value; save();
+  var parts = b.split('.'); data[parts[0]][parts[1]] = el.value; save(); if (b === 'driver.name') pushUpdate();
   if (b === 'profile.name') { var ini = document.getElementById('initial'); if (ini) ini.textContent = (el.value || '?').charAt(0).toUpperCase(); }
 });
 document.addEventListener('change', function (e) {
@@ -1117,6 +1176,9 @@ if (isDarkPref && isDarkPref.addEventListener) isDarkPref.addEventListener('chan
 render();
 if (data.setup) loadWeather();
 cpSync();
+if (data.push) pushUpdate();
+if (/[?&]ask=/.test(location.search) && history.replaceState) history.replaceState(null, '', location.pathname);
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.type === 'ask' && data.setup) { ui.tab = 'today'; ui.sub = null; ui.menu = null; render(); } });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
 </script>

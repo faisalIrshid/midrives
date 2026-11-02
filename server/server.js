@@ -1,7 +1,7 @@
-// MiDrives carpool server.
-// One file, no dependencies. Needs Node 18 or newer.
+// MiDrives server: carpool groups and ride reminders.
+// Needs Node 18 or newer. Reminders also need `npm install` (the web-push package).
 //   PORT=8080 DATA_FILE=./data.json ALLOWED_ORIGIN=https://faisalirshid.github.io node server.js
-// Keeps every group in one JSON file. Fine for a few friends; see README.md.
+// Keeps everything in one JSON file. Fine for a few friends; see README.md.
 'use strict';
 const http = require('http');
 const fs = require('fs');
@@ -13,6 +13,10 @@ const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data.json');
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 const INVITE_DAYS = 7;
 const MAX_MEMBERS = 8;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'https://github.com/faisalIrshid/midrives';
+const DRY_RUN = process.env.PUSH_DRY_RUN === '1';
+let webPushLib = null;
+try { webPushLib = require('web-push'); } catch (e) { /* reminders stay off until `npm install` */ }
 
 /* ---------- storage ---------- */
 let db = { groups: {}, invites: {} };
@@ -78,12 +82,108 @@ function group(gid) {
   return g;
 }
 
+
+/* ---------- reminders (web push) ---------- */
+function vapid() {
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) return { publicKey: process.env.VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY };
+  if (!db.vapid) { if (!webPushLib) throw new HttpError(501, 'Reminders need the web-push package. Run npm install in the server folder.'); db.vapid = webPushLib.generateVAPIDKeys(); save(); }
+  return db.vapid;
+}
+function pushClient() {
+  if (!webPushLib) throw new HttpError(501, 'Reminders need the web-push package. Run npm install in the server folder.');
+  const v = vapid();
+  webPushLib.setVapidDetails(VAPID_SUBJECT, v.publicKey, v.privateKey);
+  return webPushLib;
+}
+function validTz(tz) { try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch (e) { return false; } }
+function applyPushSettings(s, b) {
+  if (b.schedule) {
+    const sc = b.schedule, okT = (v) => Number.isInteger(v) && v >= 0 && v < 1440;
+    s.schedule = {
+      m: okT(sc.m) ? sc.m : 420, e: okT(sc.e) ? sc.e : 960,
+      days: Array.isArray(sc.days) ? [...new Set(sc.days.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))] : [1, 2, 3, 4, 5],
+      tz: typeof sc.tz === 'string' && validTz(sc.tz) ? sc.tz : 'UTC'
+    };
+  }
+  if (b.driverName != null) s.driverName = clean(b.driverName, 40);
+  if (b.carpool !== undefined) s.carpool = b.carpool && b.carpool.groupId ? { groupId: clean(b.carpool.groupId, 40), memberId: clean(b.carpool.memberId, 40) } : null;
+  if (b.answered && /^\d{4}-\d{2}-\d{2}$/.test(String(b.answered.date))) {
+    const a = s.answered[b.answered.date] || (s.answered[b.answered.date] = {});
+    for (const leg of ['m', 'e']) if (b.answered[leg] != null) a[leg] = !!b.answered[leg];
+  }
+}
+function localNow(tz, when) {
+  const o = {};
+  for (const x of new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short' }).formatToParts(when || new Date())) o[x.type] = x.value;
+  return { date: `${o.year}-${o.month}-${o.day}`, mins: (+o.hour % 24) * 60 + +o.minute, wd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(o.weekday) };
+}
+function answeredLeg(s, date, leg) {
+  if (s.answered[date] && s.answered[date][leg]) return true;
+  if (s.carpool) {
+    const g = db.groups[s.carpool.groupId];
+    if (g && g.rides[date] && g.rides[date][leg === 'm' ? 'w' : 'h']) return true;
+  }
+  return false;
+}
+async function tick(when) {
+  if (!db.push) return;
+  let wp = null;
+  if (!DRY_RUN) { try { wp = pushClient(); } catch (e) { return; } }
+  for (const s of Object.values(db.push.subs)) {
+    if (!s.schedule) continue;
+    const now = localNow(s.schedule.tz, when);
+    for (const k of Object.keys(s.sent)) if (k.slice(0, 10) < now.date) delete s.sent[k];
+    for (const k of Object.keys(s.answered)) if (k < now.date) delete s.answered[k];
+    if (s.schedule.days.indexOf(now.wd) < 0) continue;
+    for (const leg of ['m', 'e']) {
+      const at = s.schedule[leg], key = now.date + ':' + leg;
+      // send at the minute, or up to 15 minutes late if the server was busy or restarting
+      if (now.mins < at || now.mins > at + 15 || s.sent[key] || answeredLeg(s, now.date, leg)) continue;
+      s.sent[key] = true; save();
+      const driver = s.driverName || 'your driver';
+      const payload = { title: leg === 'm' ? 'Ride to Work' : 'Ride Home', body: leg === 'm' ? `Riding with ${driver} this morning?` : `Riding home with ${driver} this evening?`, leg, date: now.date };
+      if (DRY_RUN) { console.log('DRY RUN push to', s.id, JSON.stringify(payload)); continue; }
+      try { await wp.sendNotification(s.subscription, JSON.stringify(payload), { TTL: 3600, urgency: 'high' }); }
+      catch (e) {
+        if (e.statusCode === 404 || e.statusCode === 410) { delete db.push.subs[s.id]; save(); }
+        else console.error('Push failed:', e.statusCode || e.message);
+      }
+    }
+  }
+}
+
 /* ---------- routes ---------- */
 async function route(req, url, body) {
   const p = url.pathname.replace(/\/+$/, '');
   const parts = p.split('/').filter(Boolean);
 
-  if (req.method === 'GET' && (p === '' || p === '/health')) return { ok: true, app: 'midrives', api: 1 };
+  if (req.method === 'GET' && (p === '' || p === '/health')) return { ok: true, app: 'midrives', api: 1, reminders: !!webPushLib };
+
+  // Reminders: the app's public key for subscribing
+  if (req.method === 'GET' && p === '/push/key') return { publicKey: vapid().publicKey };
+
+  // Reminders: { subscription, schedule: { m, e, days, tz }, driverName, carpool }
+  if (req.method === 'POST' && p === '/push/subscribe') {
+    const sub = body.subscription;
+    if (!sub || typeof sub.endpoint !== 'string' || !/^https:\/\//.test(sub.endpoint) || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) throw new HttpError(400, 'Bad subscription');
+    db.push = db.push || { subs: {} };
+    let s = Object.values(db.push.subs).find((x) => x.subscription.endpoint === sub.endpoint);
+    if (!s) { s = { id: id(8), answered: {}, sent: {} }; db.push.subs[s.id] = s; }
+    const token = id(24);
+    s.tokenHash = hash(token);
+    s.subscription = { endpoint: sub.endpoint, keys: { p256dh: String(sub.keys.p256dh), auth: String(sub.keys.auth) } };
+    applyPushSettings(s, Object.assign({ schedule: {} }, body));
+    save();
+    return { status: 201, body: { id: s.id, token } };
+  }
+  if (parts[0] === 'push' && parts[1] && parts.length === 2) {
+    const s = db.push && db.push.subs[parts[1]];
+    if (!s) throw new HttpError(404, 'Reminders not found');
+    const t = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    if (!t || hash(t) !== s.tokenHash) throw new HttpError(401, 'Not allowed');
+    if (req.method === 'PUT') { applyPushSettings(s, body); save(); return { ok: true }; }
+    if (req.method === 'DELETE') { delete db.push.subs[s.id]; save(); return { status: 204 }; }
+  }
 
   // Start a carpool: { name, driverName, price, memberName }
   if (req.method === 'POST' && p === '/groups') {
@@ -190,4 +290,7 @@ http.createServer((req, res) => {
       send(500, { error: 'Server error' });
     }
   });
-}).listen(PORT, () => console.log(`MiDrives carpool server on :${PORT}, data in ${DATA_FILE}`));
+}).listen(PORT, () => console.log(`MiDrives server on :${PORT}, data in ${DATA_FILE}, reminders ${webPushLib ? (DRY_RUN ? 'dry run' : 'on') : 'off (run npm install)'}`));
+
+setInterval(() => tick().catch((e) => console.error(e)), 30 * 1000);
+module.exports = { tick, localNow };
