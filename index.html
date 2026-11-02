@@ -37,9 +37,12 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%}
+html{min-height:100vh;min-height:100lvh;background:#DDE7F3}
+.dark{background:#0B1020}
+body{min-height:100vh;min-height:100lvh}
 body{font-family:var(--font);color:var(--text);background:#DDE7F3;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
 .dark body{background:#0B1020}
-#bg{position:fixed;inset:0;z-index:-1;background-color:#DDE7F3;background-image:radial-gradient(60% 40% at 12% 8%,rgba(94,156,255,.55),transparent 70%),radial-gradient(55% 35% at 96% 30%,rgba(255,170,110,.5),transparent 70%),radial-gradient(70% 45% at 25% 80%,rgba(110,220,190,.45),transparent 70%),radial-gradient(50% 35% at 92% 96%,rgba(170,140,255,.4),transparent 70%);transition:background-color .5s}
+#bg{position:fixed;left:0;right:0;top:calc(-40px - env(safe-area-inset-top));height:calc(100vh + 80px + env(safe-area-inset-top) + env(safe-area-inset-bottom));height:calc(100lvh + 80px + env(safe-area-inset-top) + env(safe-area-inset-bottom));z-index:-1;pointer-events:none;background-color:#DDE7F3;background-image:radial-gradient(60% 40% at 12% 8%,rgba(94,156,255,.55),transparent 70%),radial-gradient(55% 35% at 96% 30%,rgba(255,170,110,.5),transparent 70%),radial-gradient(70% 45% at 25% 80%,rgba(110,220,190,.45),transparent 70%),radial-gradient(50% 35% at 92% 96%,rgba(170,140,255,.4),transparent 70%);transition:background-color .5s}
 .dark #bg{background-color:#0B1020;background-image:radial-gradient(60% 40% at 15% 10%,rgba(70,90,200,.55),transparent 70%),radial-gradient(55% 35% at 95% 35%,rgba(220,110,60,.35),transparent 70%),radial-gradient(70% 45% at 25% 85%,rgba(40,140,130,.35),transparent 70%),radial-gradient(50% 35% at 90% 95%,rgba(120,80,200,.35),transparent 70%)}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -207,7 +210,7 @@ button:active:not([disabled]),a:active{transform:scale(.96)}
 <script>
 (function () {
 'use strict';
-var VERSION = '2.0';
+var VERSION = '2.0.1';
 var KEY = 'drivertrips:v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];

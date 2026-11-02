@@ -1,5 +1,5 @@
 // Keeps MiDrives working offline. Bump CACHE when you change any file.
-const CACHE = 'midrives-v4';
+const CACHE = 'midrives-v5';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
