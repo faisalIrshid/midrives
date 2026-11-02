@@ -229,7 +229,7 @@ button:active:not([disabled]),a:active{transform:scale(.96)}
 <script>
 (function () {
 'use strict';
-var VERSION = '2.3';
+var VERSION = '2.3.1';
 var KEY = 'drivertrips:v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -676,8 +676,8 @@ function vProfile() {
   var ph = !!data.profile.photo;
   return header('Profile') + '<div class="hero" style="gap:6px"><button type="button" class="pfp-btn" data-act="pickphoto" aria-label="' + (ph ? 'Change' : 'Add') + ' profile photo">' + avatar(96, 40, 'initial') +
     '<span class="cam" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>' +
-    '<div style="display:flex;gap:4px"><button type="button" class="btn link" data-act="pickphoto" style="min-height:44px;background:none;border:0;font-size:16px">' + (ph ? 'Change Photo' : 'Add Photo') + '</button>' +
-    (ph ? '<button type="button" class="btn danger" data-act="rmphoto" style="min-height:44px;background:none;border:0;font-size:16px">Remove</button>' : '') + '</div></div>' +
+    (ph ? '<button type="button" class="btn danger" data-act="askrmphoto" style="min-height:44px;background:none;border:0;font-size:16px">Remove Photo</button>'
+        : '<button type="button" class="btn link" data-act="pickphoto" style="min-height:44px;background:none;border:0;font-size:16px">Add Photo</button>') + '</div>' +
     '<div class="glass list"><label class="field"><span>Name</span><input id="p-name" autocomplete="given-name" value="' + esc(data.profile.name) + '" data-bind="profile.name"></label>' +
     '<label class="field"><span>City</span><input id="p-city" autocomplete="address-level2" placeholder="For the weather" value="' + esc(data.profile.city) + '" data-bind="profile.city"></label></div>' +
     '<p class="note">Your name is used in the greeting. Your city sets the weather on Today. Your photo stays on this iPhone.</p>';
@@ -1109,7 +1109,8 @@ document.addEventListener('click', function (e) {
       break; }
     case 'theme': data.theme = a.dataset.v; save(); render(); break;
     case 'pickphoto': document.getElementById('photoFile').click(); break;
-    case 'rmphoto': delete data.profile.photo; save(); render(); toast('Photo removed'); break;
+    case 'askrmphoto': sheet('<h2>Remove your photo?</h2><p>Your initial will show instead. You can add a new photo anytime by tapping it.</p><button type="button" class="btn tint" style="background:#A80016" data-act="rmphoto">Remove Photo</button><button type="button" class="btn glass" data-act="closesheet">Cancel</button>'); break;
+    case 'rmphoto': closeSheet(); delete data.profile.photo; save(); render(); toast('Photo removed'); break;
     case 'pushtoggle': if (data.push) remindersOff(); else remindersOn(); break;
     case 'cpmode': ui.cpMode = a.dataset.v || null; ui.cpErr = null; render(); if (ui.cpMode) { var fi = document.getElementById(ui.cpMode === 'join' ? 'cp-code' : 'cp-name'); if (fi) fi.focus(); } break;
     case 'cpcreate': cpCreate(); break;
